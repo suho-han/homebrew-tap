@@ -1,7 +1,6 @@
 class Oct < Formula
   desc "One binary that organizes your AI coding CLIs — update, quota watch, maintenance"
   homepage "https://github.com/suho-han/one-click-ai-tools"
-  version "0.1.5"
   license "MIT"
 
   on_macos do
