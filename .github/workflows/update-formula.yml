@@ -15,7 +15,10 @@ name: update-formula
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    # Once a day (02:37 UTC = 11:37 KST); an off-the-hour minute because
+    # GitHub throttles whole-hour crons. A release reaches the tap within a
+    # day, or immediately via repository_dispatch once that's wired up.
+    - cron: '37 2 * * *'
   workflow_dispatch:
   repository_dispatch:
     types: [oct-release]
