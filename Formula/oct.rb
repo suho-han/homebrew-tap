@@ -6,19 +6,19 @@ class Oct < Formula
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/suho-han/one-click-ai-tools/releases/download/v0.1.6/one-click-ai-tools_darwin_arm64.tar.gz"
-      sha256 "f8227e29bf82267b806477a98b77d4b8abec61b363b0343f9e4556ca27d26b00"
+      sha256 "ab5c877b6b50169793a998ee44c8296bb2740e37d6863ae55687d91984fa6e11"
     else
       url "https://github.com/suho-han/one-click-ai-tools/releases/download/v0.1.6/one-click-ai-tools_darwin_amd64.tar.gz"
-      sha256 "1b6b1d02787843ef52d3d28f58cff24831634827dfac73dcf44a73d179382702"
+      sha256 "4c23741c8a0ab1f4e7ba37f95dfa2de2dcbe75c5d5af3bee5cb78d29b4233f13"
     end
   end
   on_linux do
     if Hardware::CPU.arm?
       url "https://github.com/suho-han/one-click-ai-tools/releases/download/v0.1.6/one-click-ai-tools_linux_arm64.tar.gz"
-      sha256 "3791fa7065a2a807fbd8ebac1d2d42bf3a8315b367493a64412eabd0e78de240"
+      sha256 "d3d09dd1496c66b33eba37812b4a92c0f595829f40878e73198b94fa38f656c5"
     else
       url "https://github.com/suho-han/one-click-ai-tools/releases/download/v0.1.6/one-click-ai-tools_linux_amd64.tar.gz"
-      sha256 "866640a61c9af25452b2483abf07ca0ae92785dd54dff19538b6c60c7de8a133"
+      sha256 "4b4b4da3f6607a854a73fd2e7342589c0fb96123d4d89f626d02d8002545ec4a"
     end
   end
 
