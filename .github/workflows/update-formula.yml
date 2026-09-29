@@ -6,9 +6,9 @@ name: update-formula
 # the formula bump. Prereleases never appear on that endpoint, so -beta.N
 # tags stay on the install.sh channel.
 #
-# Most scheduled runs are no-ops (checkout + two API calls): the brew checks
-# and the commit only run when scripts/update-formula.sh actually bumped the
-# formula. repository_dispatch("oct-release") is wired so the main repo can
+# Most scheduled runs are no-ops (checkout + two API calls): the commit only
+# runs when scripts/update-formula.sh actually bumped the formula.
+# repository_dispatch("oct-release") is wired so the main repo can
 # trigger an immediate update later; until then the cron is the only trigger.
 # Note: GitHub disables repo schedules after 60 days without any commit —
 # each release bumps the formula, which normally keeps this repo active.
@@ -48,24 +48,9 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # brew refuses formulae outside a tap, so register this checkout as
-      # suho-han/tap first. Fetch resolves the real download URL and makes
-      # brew itself check the sha256 for this platform before the formula
-      # is pushed.
-      - name: Verify formula with brew
-        if: steps.diff.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          command -v brew >/dev/null 2>&1 || {
-            echo "brew not found on runner; skipping verification"
-            exit 0
-          }
-          tap_dir="$(brew --repository)/Library/Taps/suho-han/homebrew-tap"
-          mkdir -p "$(dirname "$tap_dir")"
-          ln -sfn "$PWD" "$tap_dir"
-          brew style suho-han/tap/oct
-          brew fetch --formula suho-han/tap/oct
-
+      # scripts/update-formula.sh already fail-closed-verified every asset's
+      # sha256 against the real tarball bytes before writing the formula, so
+      # the commit below can trust the file it pushed.
       - name: Commit and push
         if: steps.diff.outputs.changed == 'true'
         run: |

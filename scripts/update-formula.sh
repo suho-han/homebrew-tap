@@ -4,8 +4,9 @@
 # "Stable" means whatever the /releases/latest endpoint returns: it never
 # points at prereleases or drafts, so -beta.N tags stay on the install.sh
 # channel and never reach the formula. The four tarball sha256 values are
-# taken from the release's own checksums.txt; every one of them must be
-# present and well-formed or the script fails without touching the formula.
+# taken from the release's own checksums.txt, then re-checked against the
+# actual asset bytes; anything missing or inconsistent fails the run without
+# touching the formula.
 #
 # Used by .github/workflows/update-formula.yml (cron / dispatch). Safe to run
 # locally: with no new release it exits 0 as a no-op.
@@ -61,6 +62,24 @@ for tarball in "${TARBALLS[@]}"; do
   [[ "$hash" =~ ^[0-9a-f]{64}$ ]] ||
     die "no valid sha256 for ${tarball} in ${tag}'s checksums.txt"
   sha["$tarball"]="$hash"
+done
+
+# --- Verify the checksums against the actual asset bytes --------------------
+# The formula pins these shas, so they must match what GitHub actually
+# serves, not just what the release's checksums.txt claims.
+hash_file() {
+  sha256sum "$1" 2>/dev/null | cut -d' ' -f1 || shasum -a 256 "$1" | cut -d' ' -f1
+}
+mkdir -p "${tmp}/assets"
+gh release download "$tag" -R "$OCT_REPO" \
+  -p "${TARBALLS[0]}" -p "${TARBALLS[1]}" \
+  -p "${TARBALLS[2]}" -p "${TARBALLS[3]}" \
+  -D "${tmp}/assets" --clobber
+for tarball in "${TARBALLS[@]}"; do
+  actual="$(hash_file "${tmp}/assets/${tarball}")"
+  [[ "$actual" == "${sha[${tarball}]}" ]] ||
+    die "sha256 mismatch for ${tarball}: checksums.txt says ${sha[${tarball}]}, asset bytes are ${actual}"
+  echo "OK: ${tarball} sha256 verified"
 done
 
 # --- Regenerate the formula (structure identical to the v0.1.5 original) ----
