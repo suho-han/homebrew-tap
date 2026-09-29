@@ -14,5 +14,9 @@ are unaffected; see the caveats when both channels are installed.
 
 ## Updates
 
-The formula is bumped manually per stable release. To request an update,
-open an issue on the main repository.
+The formula is bumped automatically: a GitHub Actions workflow
+([`.github/workflows/update-formula.yml`](.github/workflows/update-formula.yml))
+checks the latest **stable** GitHub Release every 20 minutes (and on manual
+dispatch) and pushes a formula bump via
+[`scripts/update-formula.sh`](scripts/update-formula.sh), which fails closed
+if any tarball asset or checksum is missing. Prereleases are never picked up.

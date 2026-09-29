@@ -1,0 +1,77 @@
+name: update-formula
+
+# Keeps Formula/oct.rb tracking the latest stable GitHub Release of
+# suho-han/one-click-ai-tools. Polling the /releases/latest endpoint on a
+# schedule needs no cross-repo token: this repo's own GITHUB_TOKEN can push
+# the formula bump. Prereleases never appear on that endpoint, so -beta.N
+# tags stay on the install.sh channel.
+#
+# Most scheduled runs are no-ops (checkout + two API calls): the brew checks
+# and the commit only run when scripts/update-formula.sh actually bumped the
+# formula. repository_dispatch("oct-release") is wired so the main repo can
+# trigger an immediate update later; until then the cron is the only trigger.
+# Note: GitHub disables repo schedules after 60 days without any commit —
+# each release bumps the formula, which normally keeps this repo active.
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [oct-release]
+
+concurrency:
+  group: update-formula
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Update formula to latest stable release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/update-formula.sh
+
+      - name: Detect formula change
+        id: diff
+        run: |
+          if git diff --quiet HEAD -- Formula/oct.rb; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # brew refuses formulae outside a tap, so register this checkout as
+      # suho-han/tap first. Fetch resolves the real download URL and makes
+      # brew itself check the sha256 for this platform before the formula
+      # is pushed.
+      - name: Verify formula with brew
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          command -v brew >/dev/null 2>&1 || {
+            echo "brew not found on runner; skipping verification"
+            exit 0
+          }
+          tap_dir="$(brew --repository)/Library/Taps/suho-han/homebrew-tap"
+          mkdir -p "$(dirname "$tap_dir")"
+          ln -sfn "$PWD" "$tap_dir"
+          brew style suho-han/tap/oct
+          brew fetch --formula suho-han/tap/oct
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          tag="$(sed -n 's|.*releases/download/\([^/]*\)/.*|\1|p' Formula/oct.rb | head -n1)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/oct.rb
+          git commit -m "chore: update oct to ${tag}"
+          git push
